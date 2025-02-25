@@ -2,23 +2,32 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
-	http.HandleFunc("/", homeHandlerA3)
-	http.HandleFunc("/about", aboutHandlerA3)
-	fmt.Println("Server run on http://localhost:1234")
-	http.ListenAndServe(":1234", nil)
-}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", fHandlerA3)
 
-func aboutHandlerA3(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprintln(w, "Home Page")
+	wrappedMux := loggingMiddlewareA3(mux)
+
+	fmt.Println("Server run on http://localhost:1234")
+	err := http.ListenAndServe(":1234", wrappedMux)
 	if err != nil {
 		return
 	}
 }
 
-func homeHandlerA3(w http.ResponseWriter, t *http.Request) {
+func fHandlerA3(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello ! ))")
+}
 
+func loggingMiddlewareA3(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
+	})
 }
